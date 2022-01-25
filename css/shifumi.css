@@ -76,6 +76,7 @@ main{
 h1{
     text-align: center;
     padding: 15px;
+    font-size: 30px;
 
 }
 
@@ -192,8 +193,8 @@ h3 span{
     background-color: var(--color-secondary);
     color: white;
     position: absolute;
-    top:3%;
-    right: 3%;
+    top:7%;
+    right: 2%;
 }
 
 .messageBox{

@@ -18,8 +18,12 @@ document.querySelector(".playerName").innerHTML = document.querySelector(".playe
 document.querySelector(".scoreIA").innerHTML = scoreIA
 document.querySelector(".playerScore").innerHTML = playerScore
 
-// taux de réussite du l'IA (de 50 à 100)
-let levelTwoIARate = 70
+// taux de réussite du l'IA
+let savePlayerChoix =[]
+let choice=[0,0,0]
+let nbJeux = 0
+// Nb de jeux avant l'activation de la triche
+let activateCheat=3
 
 const changeName = (e) => {
     if (e.key == "Enter") {
@@ -61,30 +65,72 @@ const playerChoice = (e) => {
     }
     // Lancement du jeu selon le niveau
     let game
+    nbJeux++
     let choiceLevel = document.querySelector("#level").value
     if (choiceLevel==1) game=gameLevelOne()
-    else if (choiceLevel==2) console.log("Niveau 2")
+    else if (choiceLevel==2) game=gameLevelTwo()
     else if (choiceLevel==3) console.log("Niveau 3")
+    // Met à jour les scores
     calculScore(game)
 }
 
 const gameLevelOne = () => {
     let winner = 0
     let choiceIA = random(1, 1, 3)
-    if (choicePlayer == choiceIA) winner = 0
-    else if (choicePlayer == 1 && choiceIA == 2) winner = 1
-    else if (choicePlayer == 1 && choiceIA == 3) winner = 2
-    else if (choicePlayer == 2 && choiceIA == 1) winner = 2
-    else if (choicePlayer == 2 && choiceIA == 3) winner = 1
-    else if (choicePlayer == 3 && choiceIA == 1) winner = 1
-    else if (choicePlayer == 3 && choiceIA == 2) winner = 2
-
+    winner = theWinnerIs(choiceIA)
     displayChoiceIA(choiceIA)
     return winner
 }
 
 
+const gameLevelTwo = () =>
+{
+    // Memorisation du choix du joueur
+    savePlayerChoix.push(choicePlayer)
+    choice[choicePlayer-1]++
+    console.log(choice)
+    let choiceMaxIndice=-1
+    let choiceMax=0
+    // Calcul propabilité
+    for (i in choice)
+    {
+        if (choice[i]>choiceMax)
+        {
+            choiceMax=choice[i] 
+            choiceMaxIndice=i
+        }
+    }
+    choiceMaxIndice=parseInt(choiceMaxIndice)
+    let winner = 0
+    let choiceIA
+    if (nbJeux>activateCheat) {
+        let choiceRamdon=random(1,1,3)
+        while (choiceRamdon==(choiceMaxIndice+1))
+        {
+            choiceRamdon=random(1,1,3)
+        }
+        console.log("Choix aléatoire : "+choiceRamdon)
+        choiceIA=choiceRamdon
+    }
+    else choiceIA = random(1, 1, 3)
+    winner = theWinnerIs(choiceIA)
+    displayChoiceIA(choiceIA)
+    return winner
+}
 
+const theWinnerIs = (choiceIA) => {
+    let winnerIs
+    if (choicePlayer == choiceIA) winnerIs = 0
+    else if (choicePlayer == 1 && choiceIA == 2) winnerIs = 1
+    else if (choicePlayer == 1 && choiceIA == 3) winnerIs = 2
+    else if (choicePlayer == 2 && choiceIA == 1) winnerIs = 2
+    else if (choicePlayer == 2 && choiceIA == 3) winnerIs = 1
+    else if (choicePlayer == 3 && choiceIA == 1) winnerIs = 1
+    else if (choicePlayer == 3 && choiceIA == 2) winnerIs = 2
+    // Retourne le gagnant selon les choix de chacun
+    return winnerIs
+
+}
 
 const displayChoiceIA = (choice) =>
 {
