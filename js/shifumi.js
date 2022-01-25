@@ -20,6 +20,7 @@ document.querySelector(".playerScore").innerHTML = playerScore
 
 // taux de réussite du l'IA
 let savePlayerChoix =[]
+let savePlayerChoixLevel3 =[]
 let choice=[0,0,0]
 let nbJeux = 0
 // Nb de jeux avant l'activation de la triche
@@ -69,7 +70,7 @@ const playerChoice = (e) => {
     let choiceLevel = document.querySelector("#level").value
     if (choiceLevel==1) game=gameLevelOne()
     else if (choiceLevel==2) game=gameLevelTwo()
-    else if (choiceLevel==3) console.log("Niveau 3")
+    else if (choiceLevel==3) game=gameLevelThree()
     // Met à jour les scores
     calculScore(game)
 }
@@ -88,10 +89,8 @@ const gameLevelTwo = () =>
     // Memorisation du choix du joueur
     savePlayerChoix.push(choicePlayer)
     choice[choicePlayer-1]++
-    console.log(choice)
     let choiceMaxIndice=-1
     let choiceMax=0
-    // Calcul propabilité
     for (i in choice)
     {
         if (choice[i]>choiceMax)
@@ -109,10 +108,37 @@ const gameLevelTwo = () =>
         {
             choiceRamdon=random(1,1,3)
         }
-        console.log("Choix aléatoire : "+choiceRamdon)
         choiceIA=choiceRamdon
     }
     else choiceIA = random(1, 1, 3)
+    winner = theWinnerIs(choiceIA)
+    displayChoiceIA(choiceIA)
+    return winner
+}
+
+const gameLevelThree=() =>
+{
+
+    let winner = 0
+    let choiceIA
+    if (nbJeux>activateCheat && nbJeux>1) {
+        choice=[]
+        for (let i=1; i<savePlayerChoixLevel3.length; ++i)
+        {
+            // console.log(savePlayerChoixLevel3[i].choiceIA, savePlayerChoixLevel3[i].choicePlayer)
+            // if (savePlayerChoixLevel3[i].choiceIA==choicePlayer)
+            // {
+                
+            // }
+        }
+
+        choiceIA = random(1, 1, 3)
+    }
+    else choiceIA = random(1, 1, 3)
+    // Memorisation du choix de l'IA et du joueur
+    savePlayerChoixLevel3.push({"choiceIA":choiceIA,"choicePlayer":choicePlayer})
+    //console.log(savePlayerChoixLevel3)
+    //console.log(nbJeux)
     winner = theWinnerIs(choiceIA)
     displayChoiceIA(choiceIA)
     return winner
@@ -131,6 +157,8 @@ const theWinnerIs = (choiceIA) => {
     return winnerIs
 
 }
+
+
 
 const displayChoiceIA = (choice) =>
 {
