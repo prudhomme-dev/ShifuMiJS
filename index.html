@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pierre Feuille Ciseaux</title>
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/shifumi.css">
+</head>
+<body>
+    <main id="shifumi">
+        <select name="level" id="level">
+            <option value="1" selected>Facile</option>
+            <option value="2">Intermédiaire</option>
+            <option value="3">Elevé</option>
+        </select>
+        <h1>Jouez à Pierre - Feuille - Ciseaux</h1>
+        <section class="choix">
+            <div class="button pierre"></div>
+            <div class="button feuille"></div>
+            <div class="button ciseaux"></div>
+        </section>
+
+        <section class="choixJoueur flex">
+            <div class="ia">
+                <h3>IA</h3>
+                <h3><span class="choiceIA"></span></h3>
+                <h3>Score : <span class="scoreIA"></span></h3>
+            </div>
+            <div class="choixjoueur">
+                <h3 class="playerName">[PlayerName] <button class="changePlayerName"></button></h3>
+                <div class="changeName"><input type="text" id="playerName" placeholder="Saisir votre nom"></div>
+                <h3><span class="choicePlayer"></span></h3>
+                <h3>Score : <span class="playerScore"></span></h3>
+            </div>
+        </section>
+
+        <section class="resultat">
+            <div class="gagnant"><h4><span class="winner"></span></h4></div>
+        </section>
+
+        
+    </main>
+    <div class="messageBox">
+        <h3></h3>
+        <p></p>
+        <div class="reponses"></div>
+    </div>
+</body>
+<script src="js/shifumi.js"></script>
+</html>
