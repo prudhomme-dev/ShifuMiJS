@@ -196,37 +196,3 @@ h3 span{
     top:7%;
     right: 2%;
 }
-
-.messageBox{
-    position: absolute;
-    margin: auto auto;
-    padding: 20px;
-    top:0;
-    bottom: 0;
-    left:0;
-    right: 0;
-    opacity: 0.8;
-    width: 30%;
-    height: 250px;
-    z-index: 100;
-    background-color: var(--color-secondary);
-    display: none;
-    opacity: 0;
-    transition: opacity 0.7s;
-}
-.reponses{
-    text-align: center;
-}
-.reponses button{
-    border: 1px solid var(--color-primary);
-    margin: 10px;
-    background-color: var(--color-primary);
-    color:var(--color-secondary);
-    padding: 5px 8px;
-}
-
-.reponses button:hover{
-    background-color: var(--color-secondary);;
-    color:var(--color-primary);
-    transition: all 0.5s;
-}
