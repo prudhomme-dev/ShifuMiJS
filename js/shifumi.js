@@ -19,12 +19,12 @@ document.querySelector(".scoreIA").innerHTML = scoreIA
 document.querySelector(".playerScore").innerHTML = playerScore
 
 // taux de réussite du l'IA
-let savePlayerChoix =[]
-let savePlayerChoixLevel3 =[]
-let choice=[0,0,0]
+let savePlayerChoix = []
+let savePlayerChoixLevel3 = []
+let choice = [0, 0, 0]
 let nbJeux = 0
 // Nb de jeux avant l'activation de la triche
-let activateCheat=3
+let activateCheat = 5
 
 const changeName = (e) => {
     if (e.key == "Enter") {
@@ -68,9 +68,9 @@ const playerChoice = (e) => {
     let game
     nbJeux++
     let choiceLevel = document.querySelector("#level").value
-    if (choiceLevel==1) game=gameLevelOne()
-    else if (choiceLevel==2) game=gameLevelTwo()
-    else if (choiceLevel==3) game=gameLevelThree()
+    if (choiceLevel == 1) game = gameLevelOne()
+    else if (choiceLevel == 2) game = gameLevelTwo()
+    else if (choiceLevel == 3) game = gameLevelThree()
     // Met à jour les scores
     calculScore(game)
 }
@@ -84,61 +84,91 @@ const gameLevelOne = () => {
 }
 
 
-const gameLevelTwo = () =>
-{
+const gameLevelTwo = () => {
     // Memorisation du choix du joueur
     savePlayerChoix.push(choicePlayer)
-    choice[choicePlayer-1]++
-    let choiceMaxIndice=-1
-    let choiceMax=0
-    for (i in choice)
-    {
-        if (choice[i]>choiceMax)
-        {
-            choiceMax=choice[i] 
-            choiceMaxIndice=i
+    choice[choicePlayer - 1]++
+    let choiceMaxIndice = -1
+    let choiceMax = 0
+    for (i in choice) {
+        if (choice[i] > choiceMax) {
+            choiceMax = choice[i]
+            choiceMaxIndice = i
         }
     }
-    choiceMaxIndice=parseInt(choiceMaxIndice)
+    choiceMaxIndice = parseInt(choiceMaxIndice)
     let winner = 0
     let choiceIA
-    if (nbJeux>activateCheat) {
-        let choiceRamdon=random(1,1,3)
-        while (choiceRamdon==(choiceMaxIndice+1))
-        {
-            choiceRamdon=random(1,1,3)
+    if (nbJeux > activateCheat) {
+        let choiceRamdon = random(1, 1, 3)
+        while (choiceRamdon == (choiceMaxIndice + 1)) {
+            choiceRamdon = random(1, 1, 3)
         }
-        choiceIA=choiceRamdon
-    }
-    else choiceIA = random(1, 1, 3)
+        choiceIA = choiceRamdon
+    } else choiceIA = random(1, 1, 3)
     winner = theWinnerIs(choiceIA)
     displayChoiceIA(choiceIA)
     return winner
 }
 
-const gameLevelThree=() =>
-{
+const gameLevelThree = () => {
 
     let winner = 0
     let choiceIA
-    if (nbJeux>activateCheat && nbJeux>1) {
-        choice=[]
-        for (let i=1; i<savePlayerChoixLevel3.length; ++i)
-        {
-            // console.log(savePlayerChoixLevel3[i].choiceIA, savePlayerChoixLevel3[i].choicePlayer)
-            // if (savePlayerChoixLevel3[i].choiceIA==choicePlayer)
-            // {
-                
-            // }
+    if (nbJeux > activateCheat && nbJeux > 2) {
+        choice = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        for (let i = 0; i < savePlayerChoixLevel3.length; ++i) {
+            if (i != 0) {
+                let choiceIAOld = savePlayerChoixLevel3[i - 1].choiceIA
+                let choicePlayerOld = savePlayerChoixLevel3[i].choicePlayer
+                if (choiceIAOld == 1 && choicePlayerOld == 1) choice[0]++
+                else if (choiceIAOld == 1 && choicePlayerOld == 2) choice[1]++
+                else if (choiceIAOld == 1 && choicePlayerOld == 3) choice[2]++
+                else if (choiceIAOld == 2 && choicePlayerOld == 1) choice[3]++
+                else if (choiceIAOld == 2 && choicePlayerOld == 2) choice[4]++
+                else if (choiceIAOld == 2 && choicePlayerOld == 3) choice[5]++
+                else if (choiceIAOld == 3 && choicePlayerOld == 1) choice[6]++
+                else if (choiceIAOld == 3 && choicePlayerOld == 2) choice[7]++
+                else if (choiceIAOld == 3 && choicePlayerOld == 3) choice[8]++
+            }
+
         }
 
-        choiceIA = random(1, 1, 3)
-    }
-    else choiceIA = random(1, 1, 3)
+        let choiceSum = 0
+        for (i in choice) {
+            choiceSum += choice[i]
+        }
+
+        let probaPierre = 0
+        let probaFeuille = 0
+        let probaCiseaux = 0
+        for (i in choice) {
+            if (i == 0 || i == 3 || i == 6) probaPierre += choice[i]
+            else if (i == 1 || i == 4 || i == 7) probaFeuille += choice[i]
+            else if (i == 2 || i == 5 || i == 8) probaCiseaux += choice[i]
+        }
+
+        let nbTempRandom = random(1, 1, choiceSum)
+        if (nbTempRandom <= probaPierre) {
+            choiceIA = 1
+        } else if (nbTempRandom > probaPierre && nbTempRandom <= (probaPierre + probaFeuille)) {
+            choiceIA = 2
+        } else if (nbTempRandom > (probaPierre + probaFeuille)) {
+            choiceIA = 3
+        }
+
+        if (!choiceIA) {
+            choiceIA = random(1, 1, 3)
+        }
+
+    } else choiceIA = random(1, 1, 3)
+
     // Memorisation du choix de l'IA et du joueur
-    savePlayerChoixLevel3.push({"choiceIA":choiceIA,"choicePlayer":choicePlayer})
-    //console.log(savePlayerChoixLevel3)
-    //console.log(nbJeux)
+    savePlayerChoixLevel3.push({
+        "choiceIA": choiceIA,
+        "choicePlayer": choicePlayer
+    })
+
     winner = theWinnerIs(choiceIA)
     displayChoiceIA(choiceIA)
     return winner
@@ -158,10 +188,7 @@ const theWinnerIs = (choiceIA) => {
 
 }
 
-
-
-const displayChoiceIA = (choice) =>
-{
+const displayChoiceIA = (choice) => {
     switch (choice) {
         case 1:
             document.querySelector(".choiceIA").innerHTML = "Pierre"
@@ -206,49 +233,20 @@ const updateScore = () => {
         myButtons[i].classList.remove("select")
         myButtons[i].classList.remove("noselect")
     }
-    document.querySelector(".choiceIA").innerHTML=""
-    document.querySelector(".choicePlayer").innerHTML=""
+    document.querySelector(".choiceIA").innerHTML = ""
+    document.querySelector(".choicePlayer").innerHTML = ""
+    document.querySelector(".nbTour").innerHTML = "Tour de Jeu : " + (nbJeux + 1)
 }
 
-const messageBox = (type = "info", title = "", message = "", reponses = ["OK"], fonction = ["closeModal"]) => {
-    switch (type) {
-        case "info":
-            document.querySelector(".messageBox").style.backgroundColor = "var(--color-secondary)"
-
-            break;
-
-        case "error":
-            document.querySelector(".messageBox").style.backgroundColor = "var(--color-error)"
-            break;
-
-        case "question":
-            document.querySelector(".messageBox").style.backgroundColor = "var(--color-question)"
-
-            break;
-    }
-    for (let i = 0; i < reponses.length; ++i) {
-        newButton = document.createElement("button")
-        let reponsesTag = document.querySelector(".reponses")
-        newButton.innerHTML = reponses[i]
-        //newButton.addEventListener("click", fonction[i])
-        reponsesTag.appendChild(newButton)
-    }
-    document.querySelector(".messageBox h3").innerHTML = title
-    document.querySelector(".messageBox p").innerHTML = message
-
-    document.querySelector(".messageBox").style.display = "block"
-    document.querySelector(".messageBox").style.opacity = 1
-
-}
-
-const closeModal = () => {
-    document.querySelector(".messageBox").style.display = "none"
-}
-
-//messageBox("", "Mon information", "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Minima deserunt cumque necessitatibus nemo velit iure, similique possimus accusamus consectetur eius corporis eos molestias? Veritatis dicta aut eum dolore expedita laudantium!")
-
-const reset = (e) => {
-    location.reload()
+// Remise à zéro des données
+const changeLevel = (e) => {
+    savePlayerChoix = []
+    savePlayerChoixLevel3 = []
+    choice = [0, 0, 0]
+    nbJeux = 0
+    scoreIA = 0
+    playerScore = 0
+    updateScore()
 }
 
 document.querySelector(".changePlayerName").addEventListener("click", changeName)
@@ -257,5 +255,7 @@ let myButtons = document.querySelectorAll(".button")
 for (let i = 0; i < myButtons.length; ++i) {
     myButtons[i].addEventListener("click", playerChoice)
 }
+
+document.querySelector("#level").addEventListener("change", changeLevel)
 
 let choicePlayer = 0
