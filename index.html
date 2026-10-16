@@ -5,46 +5,66 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pierre Feuille Ciseaux</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/shifumi.css">
 </head>
 <body>
     <main id="shifumi">
-        <select name="level" id="level">
-            <option value="1" selected>Facile</option>
-            <option value="2">Intermédiaire</option>
-            <option value="3">Elevé</option>
-        </select>
-        <h1>Jouez à Pierre - Feuille - Ciseaux</h1>
-        <section class="choix">
-            <div class="button pierre"></div>
-            <div class="button feuille"></div>
-            <div class="button ciseaux"></div>
-        </section>
+        <header>
+            <h1>Pierre · Feuille · Ciseaux</h1>
+            <select name="level" id="level" aria-label="Niveau de difficulté">
+                <option value="1" selected>Niveau : Facile</option>
+                <option value="2">Niveau : Intermédiaire</option>
+                <option value="3">Niveau : Élevé</option>
+            </select>
+        </header>
 
-        <section class="choixJoueur flex">
-            <div class="ia">
-                <h3>IA</h3>
-                <h3><span class="choiceIA"></span></h3>
-                <h3>Score : <span class="scoreIA"></span></h3>
+        <section class="arena" aria-label="Affrontement">
+            <div class="ia-card" aria-label="Carte de l'Ordinateur">
+                <span class="label">Ordinateur</span>
+                <div class="choice-emoji empty choiceIA" aria-live="polite">❔</div>
+                <div class="score-block">
+                    <span class="score-value scoreIA">0</span>
+                    <span class="score-label">Score</span>
+                </div>
             </div>
-            <div class="choixjoueur">
-                <h3 class="playerName">[PlayerName] <button class="changePlayerName"></button></h3>
-                <div class="changeName"><input type="text" id="playerName" placeholder="Saisir votre nom"></div>
-                <h3><span class="choicePlayer"></span></h3>
-                <h3>Score : <span class="playerScore"></span></h3>
+
+            <div class="vs-zone" aria-hidden="true">
+                <span class="vs-emoji">⚡</span>
+                <span class="vs-text">VS</span>
+            </div>
+
+            <div class="player-card" aria-label="Carte du joueur">
+                <span class="label">Joueur</span>
+                <h3 class="playerName"><span class="player-name-text">[PlayerName]</span> <button class="changePlayerName" aria-label="Modifier le nom">✏️</button></h3>
+                <div class="changeName"><input type="text" id="playerName" placeholder="Votre nom" aria-label="Saisir votre nom"></div>
+                <div class="choice-emoji empty choicePlayer" aria-live="polite">❔</div>
+                <div class="score-block">
+                    <span class="score-value playerScore">0</span>
+                    <span class="score-label">Score</span>
+                </div>
             </div>
         </section>
 
-        <section class="resultat">
-            <div class="gagnant"><h4><span class="winner"></span></h4></div>
-            <div><h4 class="nbTour">Tour de jeu : 1</h4></div>
+        <section class="choices" aria-label="Choix disponibles">
+            <button class="choice-btn" data-choice="1" aria-label="Pierre">✊</button>
+            <button class="choice-btn" data-choice="2" aria-label="Feuille">✋</button>
+            <button class="choice-btn" data-choice="3" aria-label="Ciseaux">✌️</button>
         </section>
 
-        
+        <section class="feedback">
+            <div class="result" role="status" aria-live="polite"><span class="winner">Choisissez votre coup</span></div>
+            <div class="tour nbTour">Tour 1</div>
+        </section>
     </main>
-    <footer><p><small class="copyright">2022 - Cédric PRUD'HOMME - 
-    <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Licence Creative Commons" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a></small></p></footer>
+    <footer>
+        <p><small class="copyright">2022 - Cédric PRUD'HOMME -
+        <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Licence Creative Commons" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a></small></p>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
+    <script src="js/shifumi.js"></script>
 </body>
-<script src="js/shifumi.js"></script>
 </html>
