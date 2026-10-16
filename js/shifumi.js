@@ -1,23 +1,121 @@
-let random = (nbOccurence = 5, minimum = 0, maximum = 10) => {
-    if (minimum >= maximum || nbOccurence <= 0) return -1
-    else {
-        let resultat = []
-        for (let i = 0; i < nbOccurence; ++i) {
-            let calculmax = maximum - minimum + 1
-            resultat.push(Math.floor(Math.random() * calculmax + minimum))
-        }
-        if (resultat.length == 1) return parseInt(resultat)
-        else return resultat
+// ==================== CONSTANTES ====================
+const PIERRE = 1, FEUILLE = 2, CISEAUX = 3
+const COUNTER = { [PIERRE]: FEUILLE, [FEUILLE]: CISEAUX, [CISEAUX]: PIERRE }
+const EMOJIS = { [PIERRE]: "✊", [FEUILLE]: "✋", [CISEAUX]: "✌️" }
+const EMOJI_NAMES = { [PIERRE]: "Pierre", [FEUILLE]: "Feuille", [CISEAUX]: "Ciseaux" }
+
+const WINDOW_SIZE = 10
+const RECENT_THRESHOLD = 5
+
+// ==================== HELPERS ====================
+const randomChoice = () => Math.floor(Math.random() * 3) + 1
+const randomInRange = (n) => Math.floor(Math.random() * n) + 1
+
+const weightedPick = (counts) => {
+    const total = counts[0] + counts[1] + counts[2]
+    if (total <= 0) return -1
+    let r = randomInRange(total)
+    for (let i = 0; i < counts.length; i++) {
+        if (r <= counts[i]) return i
+        r -= counts[i]
+    }
+    return counts.length - 1
+}
+
+const recencyWeight = (pos, length) =>
+    (length >= RECENT_THRESHOLD && pos >= length - RECENT_THRESHOLD) ? 3 : 1
+
+const emptyTransitions = () => Array.from({ length: 9 }, () => [0, 0, 0])
+const emptyAntiPattern = () => [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+
+const pushBounded = (arr, value, max = WINDOW_SIZE) => {
+    arr.push(value)
+    if (arr.length > max) arr.shift()
+}
+
+const rebuildMarkov2 = (history, transitions) => {
+    for (let i = 0; i < 9; i++) {
+        transitions[i][0] = 0
+        transitions[i][1] = 0
+        transitions[i][2] = 0
+    }
+    for (let i = 0; i < history.length - 2; i++) {
+        const w = recencyWeight(i, history.length)
+        const sIdx = (history[i] - 1) * 3 + (history[i + 1] - 1)
+        transitions[sIdx][history[i + 2] - 1] += w
     }
 }
 
-const EMOJIS = { 1: "✊", 2: "✋", 3: "✌️" }
-const EMOJI_NAMES = { 1: "Pierre", 2: "Feuille", 3: "Ciseaux" }
+const rebuildAntiPattern = (iaHistory, playerHistory, antiPattern) => {
+    for (let i = 0; i < 3; i++) {
+        antiPattern[i][0] = 0
+        antiPattern[i][1] = 0
+        antiPattern[i][2] = 0
+    }
+    const len = Math.min(iaHistory.length, playerHistory.length) - 1
+    for (let t = 0; t < len; t++) {
+        const w = recencyWeight(t, playerHistory.length)
+        antiPattern[iaHistory[t] - 1][playerHistory[t + 1] - 1] += w
+    }
+}
 
-let playerName = "Joueur"
-let scoreIA = 0
-let playerScore = 0
+const predictMarkov2 = (history, transitions) => {
+    if (history.length < 2) return null
+    const sIdx = (history[history.length - 2] - 1) * 3 + (history[history.length - 1] - 1)
+    return transitions[sIdx]
+}
 
+const predictAntiPattern = (iaHistory, antiPattern) => {
+    if (iaHistory.length < 1) return null
+    return antiPattern[iaHistory[iaHistory.length - 1] - 1]
+}
+
+const combineDists = (dists) => {
+    const result = [0, 0, 0]
+    let totalWeight = 0
+    for (const d of dists) {
+        if (!d) continue
+        const total = d[0] + d[1] + d[2]
+        if (total <= 0) continue
+        for (let i = 0; i < 3; i++) result[i] += d[i] / total
+        totalWeight += 1
+    }
+    return totalWeight > 0 ? result : null
+}
+
+// ==================== ÉTAT GLOBAL ====================
+let playerName = "Joueur", scoreIA = 0, playerScore = 0
+let choicePlayer = 0, nbJeux = 0, isRevealing = false
+
+let stateL2 = { history: [], transitions: emptyTransitions() }
+let stateL3 = {
+    history: [], iaHistory: [],
+    transitions: emptyTransitions(),
+    antiPattern: emptyAntiPattern()
+}
+let stateL4 = {
+    history: [], iaHistory: [],
+    transitions: emptyTransitions(),
+    antiPattern: emptyAntiPattern(),
+    turnCount: 0
+}
+
+const resetAllLevels = () => {
+    stateL2 = { history: [], transitions: emptyTransitions() }
+    stateL3 = {
+        history: [], iaHistory: [],
+        transitions: emptyTransitions(),
+        antiPattern: emptyAntiPattern()
+    }
+    stateL4 = {
+        history: [], iaHistory: [],
+        transitions: emptyTransitions(),
+        antiPattern: emptyAntiPattern(),
+        turnCount: 0
+    }
+}
+
+// ==================== DOM ====================
 const $scoreIA = () => document.querySelector(".scoreIA")
 const $scorePlayer = () => document.querySelector(".playerScore")
 const $choiceIA = () => document.querySelector(".choiceIA")
@@ -28,20 +126,11 @@ const $nbTour = () => document.querySelector(".nbTour")
 const $vsEmoji = () => document.querySelector(".vs-emoji")
 const $playerNameText = () => document.querySelector(".player-name-text")
 
-// Init
 $playerNameText().innerHTML = playerName
 $scoreIA().innerHTML = scoreIA
 $scorePlayer().innerHTML = playerScore
 
-// IA learning data
-let savePlayerChoix = []
-let savePlayerChoixLevel3 = []
-let choice = [0, 0, 0]
-let nbJeux = 0
-let activateCheat = 5
-let choicePlayer = 0
-let isRevealing = false
-
+// ==================== GESTION NOM ====================
 const changeName = (e) => {
     if (e.key == "Enter") {
         if (document.querySelector("#playerName").value != "") {
@@ -55,6 +144,7 @@ const changeName = (e) => {
     }
 }
 
+// ==================== TOUR DU JOUEUR ====================
 const playerChoice = (e) => {
     if (isRevealing) return
     const btn = e.currentTarget || e.target.closest(".choice-btn")
@@ -67,127 +157,117 @@ const playerChoice = (e) => {
     $choicePlayer().textContent = EMOJIS[choicePlayer]
     $choicePlayer().classList.remove("empty")
 
-    let buttons = document.querySelectorAll(".choice-btn")
+    const buttons = document.querySelectorAll(".choice-btn")
     for (let i = 0; i < buttons.length; ++i) {
         buttons[i].disabled = true
         if (buttons[i] !== btn) buttons[i].classList.add("noselect")
     }
 
     nbJeux++
-    let choiceLevel = document.querySelector("#level").value
+    const choiceLevel = document.querySelector("#level").value
     let game
     if (choiceLevel == 1) game = gameLevelOne()
     else if (choiceLevel == 2) game = gameLevelTwo()
     else if (choiceLevel == 3) game = gameLevelThree()
+    else if (choiceLevel == 4) game = gameLevelFour()
     calculScore(game)
 }
 
+// ==================== NIVEAUX ====================
 const gameLevelOne = () => {
-    let winner = 0
-    let choiceIA = random(1, 1, 3)
-    winner = theWinnerIs(choiceIA)
+    const choiceIA = randomChoice()
+    const winner = theWinnerIs(choiceIA)
     revealIA(choiceIA)
     return winner
 }
 
 const gameLevelTwo = () => {
-    savePlayerChoix.push(choicePlayer)
-    choice[choicePlayer - 1]++
-    let choiceMaxIndice = -1
-    let choiceMax = 0
-    for (i in choice) {
-        if (choice[i] > choiceMax) {
-            choiceMax = choice[i]
-            choiceMaxIndice = i
-        }
+    const s = stateL2
+    let choiceIA = randomChoice()
+    const dist = predictMarkov2(s.history, s.transitions)
+    if (dist) {
+        const idx = weightedPick(dist)
+        if (idx >= 0) choiceIA = COUNTER[idx + 1]
     }
-    choiceMaxIndice = parseInt(choiceMaxIndice)
-    let winner = 0
-    let choiceIA
-    if (nbJeux > activateCheat) {
-        let choiceRamdon = random(1, 1, 3)
-        while (choiceRamdon == (choiceMaxIndice + 1)) {
-            choiceRamdon = random(1, 1, 3)
-        }
-        choiceIA = choiceRamdon
-    } else choiceIA = random(1, 1, 3)
-    winner = theWinnerIs(choiceIA)
+    pushBounded(s.history, choicePlayer)
+    rebuildMarkov2(s.history, s.transitions)
+    const winner = theWinnerIs(choiceIA)
     revealIA(choiceIA)
     return winner
 }
 
 const gameLevelThree = () => {
-    let winner = 0
-    let choiceIA
-    if (nbJeux > activateCheat && nbJeux > 2) {
-        choice = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-        for (let i = 0; i < savePlayerChoixLevel3.length; ++i) {
-            if (i != 0) {
-                let choiceIAOld = savePlayerChoixLevel3[i - 1].choiceIA
-                let choicePlayerOld = savePlayerChoixLevel3[i].choicePlayer
-                if (choiceIAOld == 1 && choicePlayerOld == 1) choice[0]++
-                else if (choiceIAOld == 1 && choicePlayerOld == 2) choice[1]++
-                else if (choiceIAOld == 1 && choicePlayerOld == 3) choice[2]++
-                else if (choiceIAOld == 2 && choicePlayerOld == 1) choice[3]++
-                else if (choiceIAOld == 2 && choicePlayerOld == 2) choice[4]++
-                else if (choiceIAOld == 2 && choicePlayerOld == 3) choice[5]++
-                else if (choiceIAOld == 3 && choicePlayerOld == 1) choice[6]++
-                else if (choiceIAOld == 3 && choicePlayerOld == 2) choice[7]++
-                else if (choiceIAOld == 3 && choicePlayerOld == 3) choice[8]++
-            }
-        }
+    const s = stateL3
+    rebuildMarkov2(s.history, s.transitions)
+    rebuildAntiPattern(s.iaHistory, s.history, s.antiPattern)
 
-        let choiceSum = 0
-        for (i in choice) {
-            choiceSum += choice[i]
-        }
+    const combined = combineDists([
+        predictMarkov2(s.history, s.transitions),
+        predictAntiPattern(s.iaHistory, s.antiPattern)
+    ])
 
-        let probaPierre = 0
-        let probaFeuille = 0
-        let probaCiseaux = 0
-        for (i in choice) {
-            if (i == 0 || i == 3 || i == 6) probaPierre += choice[i]
-            else if (i == 1 || i == 4 || i == 7) probaFeuille += choice[i]
-            else if (i == 2 || i == 5 || i == 8) probaCiseaux += choice[i]
-        }
+    let choiceIA = randomChoice()
+    if (combined) {
+        const idx = weightedPick(combined)
+        if (idx >= 0) choiceIA = COUNTER[idx + 1]
+    }
 
-        let nbTempRandom = random(1, 1, choiceSum)
-        if (nbTempRandom <= probaPierre) {
-            choiceIA = 1
-        } else if (nbTempRandom > probaPierre && nbTempRandom <= (probaPierre + probaFeuille)) {
-            choiceIA = 2
-        } else if (nbTempRandom > (probaPierre + probaFeuille)) {
-            choiceIA = 3
-        }
+    pushBounded(s.history, choicePlayer)
+    pushBounded(s.iaHistory, choiceIA)
 
-        if (!choiceIA) {
-            choiceIA = random(1, 1, 3)
-        }
-    } else choiceIA = random(1, 1, 3)
-
-    savePlayerChoixLevel3.push({
-        "choiceIA": choiceIA,
-        "choicePlayer": choicePlayer
-    })
-
-    winner = theWinnerIs(choiceIA)
+    const winner = theWinnerIs(choiceIA)
     revealIA(choiceIA)
     return winner
 }
 
-const theWinnerIs = (choiceIA) => {
-    let winnerIs
-    if (choicePlayer == choiceIA) winnerIs = 0
-    else if (choicePlayer == 1 && choiceIA == 2) winnerIs = 1
-    else if (choicePlayer == 1 && choiceIA == 3) winnerIs = 2
-    else if (choicePlayer == 2 && choiceIA == 1) winnerIs = 2
-    else if (choicePlayer == 2 && choiceIA == 3) winnerIs = 1
-    else if (choicePlayer == 3 && choiceIA == 1) winnerIs = 1
-    else if (choicePlayer == 3 && choiceIA == 2) winnerIs = 2
-    return winnerIs
+const gameLevelFour = () => {
+    const s = stateL4
+    rebuildMarkov2(s.history, s.transitions)
+    rebuildAntiPattern(s.iaHistory, s.history, s.antiPattern)
+
+    const combined = combineDists([
+        predictMarkov2(s.history, s.transitions),
+        predictAntiPattern(s.iaHistory, s.antiPattern)
+    ])
+
+    let choiceIA = randomChoice()
+    let predicted = 0
+    if (combined) {
+        const idx = weightedPick(combined)
+        if (idx >= 0) {
+            predicted = idx + 1
+            choiceIA = COUNTER[predicted]
+        }
+    }
+
+    s.turnCount = (s.turnCount || 0) + 1
+    if (s.turnCount % 7 === 0 && predicted > 0) {
+        let bluff
+        do { bluff = randomChoice() } while (bluff === choiceIA)
+        choiceIA = bluff
+    }
+
+    pushBounded(s.history, choicePlayer)
+    pushBounded(s.iaHistory, choiceIA)
+
+    const winner = theWinnerIs(choiceIA)
+    revealIA(choiceIA)
+    return winner
 }
 
-// Révélation progressive de l'IA : pense puis révèle
+// ==================== ARBITRAGE ====================
+const theWinnerIs = (choiceIA) => {
+    if (choicePlayer == choiceIA) return 0
+    if (choicePlayer == PIERRE && choiceIA == FEUILLE) return 1
+    if (choicePlayer == PIERRE && choiceIA == CISEAUX) return 2
+    if (choicePlayer == FEUILLE && choiceIA == PIERRE) return 2
+    if (choicePlayer == FEUILLE && choiceIA == CISEAUX) return 1
+    if (choicePlayer == CISEAUX && choiceIA == PIERRE) return 1
+    if (choicePlayer == CISEAUX && choiceIA == FEUILLE) return 2
+    return 0
+}
+
+// ==================== ANIMATION RÉVÉLATION ====================
 const revealIA = (choice) => {
     isRevealing = true
     const $vs = $vsEmoji()
@@ -208,6 +288,7 @@ const revealIA = (choice) => {
     }, 900)
 }
 
+// ==================== SCORE / FEEDBACK ====================
 const calculScore = (winner) => {
     let winnerText = ""
     const res = $result()
@@ -232,13 +313,11 @@ const calculScore = (winner) => {
     }
     $winner().innerHTML = winnerText
 
-    // Flash sur le score qui augmente
     setTimeout(() => {
         if (winner === 1) $scoreIA().classList.add("flash")
         if (winner === 2) $scorePlayer().classList.add("flash")
     }, 900)
 
-    // Confettis sur gain joueur
     if (incrementPlayer && typeof window.confetti === "function") {
         setTimeout(() => {
             window.confetti({
@@ -276,17 +355,16 @@ const updateScore = () => {
     $nbTour().innerHTML = "Tour " + (nbJeux + 1)
 }
 
+// ==================== CHANGEMENT DE NIVEAU ====================
 const changeLevel = () => {
-    savePlayerChoix = []
-    savePlayerChoixLevel3 = []
-    choice = [0, 0, 0]
+    resetAllLevels()
     nbJeux = 0
     scoreIA = 0
     playerScore = 0
     updateScore()
 }
 
-// Event listeners
+// ==================== EVENT LISTENERS ====================
 document.querySelector(".changePlayerName").addEventListener("click", changeName)
 document.querySelector("#playerName").addEventListener("keydown", changeName)
 
@@ -297,7 +375,6 @@ for (let i = 0; i < myButtons.length; ++i) {
 
 document.querySelector("#level").addEventListener("change", changeLevel)
 
-// Raccourcis clavier 1/2/3
 document.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT") return
     if (e.key === "1") myButtons[0].click()
